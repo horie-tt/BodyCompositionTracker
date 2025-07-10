@@ -101,7 +101,7 @@ export class SupabaseApiClient {
       const { data, error } = await supabase
         .from(BODY_DATA_TABLE)
         .select('*')
-        .order('date', { ascending: false })
+        .order('date', { ascending: true });
 
       if (error) {
         console.error('Supabase select error:', error);
