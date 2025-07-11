@@ -2,11 +2,11 @@ import { supabase, BODY_DATA_TABLE } from './supabase';
 import { BodyData, StatsData, AppInfo, ApiResponse } from '@/types';
 
 // 日本時間変換ユーティリティ
-const convertToJST = (data: any): any => {
+const convertToJST = (data: Record<string, unknown>): Record<string, unknown> => {
   const converted = { ...data };
 
   // created_at, updated_at を自動変換
-  if (converted.created_at) {
+  if (converted.created_at && typeof converted.created_at === 'string') {
     converted.created_at = new Date(converted.created_at).toLocaleString(
       'ja-JP',
       {
@@ -15,7 +15,7 @@ const convertToJST = (data: any): any => {
     );
   }
 
-  if (converted.updated_at) {
+  if (converted.updated_at && typeof converted.updated_at === 'string') {
     converted.updated_at = new Date(converted.updated_at).toLocaleString(
       'ja-JP',
       {
