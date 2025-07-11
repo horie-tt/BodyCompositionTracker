@@ -7,13 +7,7 @@
   "installCommand": "npm ci",
   "devCommand": "npm run dev",
   "framework": "nextjs",
-  "regions": ["nrt1"],
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
-    }
-  },
+  "regions": ["hnd1"],
   "headers": [
     {
       "source": "/(.*)",

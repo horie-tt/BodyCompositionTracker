@@ -153,7 +153,7 @@ test.describe('Accessibility Tests', () => {
     // Test screen reader compatibility
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2aa'])
-      .withOptions({
+      .options({
         rules: {
           'aria-required-attr': { enabled: true },
           'aria-roles': { enabled: true },
