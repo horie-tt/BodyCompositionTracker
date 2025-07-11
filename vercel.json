@@ -73,11 +73,5 @@
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1"
     }
-  },
-  "crons": [
-    {
-      "path": "/api/health",
-      "schedule": "0 */6 * * *"
-    }
-  ]
+  }
 }
