@@ -10,7 +10,8 @@ jest.mock('chart.js', () => {
     update: jest.fn(),
     resize: jest.fn(),
   }))
-  ChartMock.register = jest.fn()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(ChartMock as any).register = jest.fn()
   
   return {
     Chart: ChartMock,
