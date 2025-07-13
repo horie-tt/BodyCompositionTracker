@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import BodyDataForm from '../BodyDataForm'
 import { BodyData } from '@/types'
+import { getCurrentDateInTimezone } from '@/lib/timezone'
 
 // Mock the API validation function
 jest.mock('@/lib/api', () => ({
@@ -42,12 +43,12 @@ describe('BodyDataForm', () => {
     expect(screen.getByTestId('status-message')).toHaveTextContent('データを入力して記録しましょう')
   })
 
-  it('has today\'s date as default', () => {
+  it('has today\'s date as default in user timezone', () => {
     render(<BodyDataForm onSubmit={mockOnSubmit} />)
     
     const dateInput = screen.getByTestId('date-input') as HTMLInputElement
-    const today = new Date().toISOString().split('T')[0]
-    expect(dateInput.value).toBe(today)
+    const expectedDate = getCurrentDateInTimezone();
+    expect(dateInput.value).toBe(expectedDate)
   })
 
   it('updates input values when user types', async () => {

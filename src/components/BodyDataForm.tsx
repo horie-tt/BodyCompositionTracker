@@ -3,10 +3,11 @@
 import React, { useState } from 'react'
 import { BodyData, BodyDataFormProps } from '@/types'
 import { validateBodyData } from '@/lib/api'
+import { getCurrentDateInTimezone } from '@/lib/timezone'
 
 export default function BodyDataForm({ onSubmit, isLoading = false }: BodyDataFormProps) {
   const [formData, setFormData] = useState<Partial<BodyData>>({
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: getCurrentDateInTimezone(), // Today's date in user's timezone
     weight: undefined,
     bmi: undefined,
     body_fat: undefined,
