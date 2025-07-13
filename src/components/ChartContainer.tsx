@@ -136,6 +136,7 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
     
     return () => {
       // Cleanup charts on unmount
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       const charts = chartsRef.current
       Object.values(charts).forEach(chart => {
         if (chart) {

@@ -63,7 +63,7 @@ export class SupabaseApiClient {
       }
 
       // 結果を日本時間に変換
-      const convertedResult = convertToJST({
+      const convertedData = convertToJST({
         id: result.id,
         date: result.date,
         weight: result.weight,
@@ -73,7 +73,19 @@ export class SupabaseApiClient {
         visceral_fat: result.visceral_fat,
         calories: result.calories,
         created_at: result.created_at,
-      }) as BodyData;
+      });
+      
+      const convertedResult: BodyData = {
+        id: convertedData.id as number,
+        date: convertedData.date as string,
+        weight: convertedData.weight as number,
+        bmi: (convertedData.bmi as number | null) || undefined,
+        body_fat: (convertedData.body_fat as number | null) || undefined,
+        muscle_mass: (convertedData.muscle_mass as number | null) || undefined,
+        visceral_fat: (convertedData.visceral_fat as number | null) || undefined,
+        calories: (convertedData.calories as number | null) || undefined,
+        created_at: convertedData.created_at as string,
+      };
 
       return {
         success: true,
@@ -112,8 +124,8 @@ export class SupabaseApiClient {
       }
 
       // 各データを日本時間に変換
-      const bodyData: BodyData[] = data.map((item) =>
-        convertToJST({
+      const bodyData: BodyData[] = data.map((item) => {
+        const convertedData = convertToJST({
           id: item.id,
           date: item.date,
           weight: item.weight,
@@ -123,8 +135,20 @@ export class SupabaseApiClient {
           visceral_fat: item.visceral_fat,
           calories: item.calories,
           created_at: item.created_at,
-        })
-      );
+        });
+        
+        return {
+          id: convertedData.id as number,
+          date: convertedData.date as string,
+          weight: convertedData.weight as number,
+          bmi: (convertedData.bmi as number | null) || undefined,
+          body_fat: (convertedData.body_fat as number | null) || undefined,
+          muscle_mass: (convertedData.muscle_mass as number | null) || undefined,
+          visceral_fat: (convertedData.visceral_fat as number | null) || undefined,
+          calories: (convertedData.calories as number | null) || undefined,
+          created_at: convertedData.created_at as string,
+        };
+      });
 
       return {
         success: true,
