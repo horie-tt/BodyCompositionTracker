@@ -8,6 +8,13 @@ import {
 describe('Timezone utilities', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // console.warnをモック化してテスト中の警告を抑制
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // モックを元に戻す
+    jest.restoreAllMocks();
   });
 
   describe('getUserTimezone', () => {
@@ -39,8 +46,17 @@ describe('Timezone utilities', () => {
     });
 
     it('should handle invalid timezone gracefully', () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn');
+      
       const date = getCurrentDateInTimezone('Invalid/Timezone');
       expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      
+      // 警告が出たことを確認
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to get date in timezone:', 
+        'Invalid/Timezone', 
+        expect.any(RangeError)
+      );
     });
   });
 
@@ -52,9 +68,18 @@ describe('Timezone utilities', () => {
     });
 
     it('should handle invalid timezone gracefully', () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn');
+      
       const timestamp = getCurrentTimestampInTimezone('Invalid/Timezone');
       expect(typeof timestamp).toBe('string');
       expect(timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/); // ISO format fallback
+      
+      // 警告が出たことを確認
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to get timestamp in timezone:', 
+        'Invalid/Timezone', 
+        expect.any(RangeError)
+      );
     });
   });
 
