@@ -31,7 +31,7 @@ jobs:
       run: npm run lint
     
     - name: Run unit tests
-      run: npm run test:coverage -- --passWithNoTests --watchAll=false
+      run: npm run test:coverage -- --passWithNoTests --watchAll=false --maxWorkers=2 --forceExit
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

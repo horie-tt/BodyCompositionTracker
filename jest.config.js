@@ -33,8 +33,9 @@ const config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(isows|@supabase|@testing-library)/)',
+    'node_modules/(?!(isows|@supabase|@testing-library|uuid)/)',
   ],
+  testTimeout: 10000,
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
