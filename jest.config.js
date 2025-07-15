@@ -33,7 +33,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(isows|@supabase|@testing-library|uuid)/)',
+    'node_modules/(?!(isows|@supabase|@testing-library|uuid|@supabase/realtime-js|@supabase/supabase-js)/)',
   ],
   testTimeout: 10000,
 }
