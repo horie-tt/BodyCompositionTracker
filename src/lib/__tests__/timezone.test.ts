@@ -22,8 +22,8 @@ describe('Timezone utilities', () => {
       const timezone = getUserTimezone();
       expect(typeof timezone).toBe('string');
       expect(timezone.length).toBeGreaterThan(0);
-      // Should be a valid timezone format (like "Asia/Tokyo" or fallback)
-      expect(timezone).toMatch(/^[A-Za-z_]+\/[A-Za-z_]+$|^Asia\/Tokyo$/);
+      // Should be a valid timezone format (like "Asia/Tokyo", "UTC", or fallback)
+      expect(timezone).toMatch(/^[A-Za-z_]+\/[A-Za-z_]+$|^Asia\/Tokyo$|^UTC$/);
     });
 
     it('should handle errors gracefully and return fallback', () => {
