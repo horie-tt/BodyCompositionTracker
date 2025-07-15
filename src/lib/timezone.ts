@@ -31,8 +31,15 @@ export const getCurrentDateInTimezone = (timezone?: string): string => {
   
   try {
     const now = new Date();
-    const localDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-    return localDate.toISOString().split('T')[0];
+    // en-CAロケールは自動的にYYYY-MM-DD形式を返す
+    const formatter = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
+    return formatter.format(now);
   } catch (error) {
     console.warn('Failed to get date in timezone:', tz, error);
     // エラー時はシステム時間を使用
