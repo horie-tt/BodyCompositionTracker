@@ -52,7 +52,6 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const { context } = require('@actions/github');
           const previewUrl = '${{ steps.vercel-deploy.outputs.preview-url }}';
           const testStatus = '${{ job.status }}';
           const emoji = testStatus === 'success' ? '✅' : '❌';
@@ -188,7 +187,6 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const { context } = require('@actions/github');
           
           try {
             const lhciResults = JSON.parse(fs.readFileSync('.lighthouseci/lhci_reports/manifest.json', 'utf8'));
