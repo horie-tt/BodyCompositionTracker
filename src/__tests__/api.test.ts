@@ -4,8 +4,22 @@ import { BodyData } from '@/types'
 // Mock fetch for testing
 global.fetch = jest.fn()
 
-// Skip this test suite due to ESM module issues with Supabase
-describe.skip('API Client', () => {
+// Mock Supabase dependencies to avoid ESM module issues
+jest.mock('@/lib/supabase-api', () => ({
+  supabaseApiClient: {
+    saveBodyData: jest.fn(),
+    getBodyData: jest.fn(),
+    calculateStats: jest.fn(),
+    getAppInfo: jest.fn(),
+    healthCheck: jest.fn(),
+  }
+}))
+
+// Disable Supabase through environment variables
+process.env.NEXT_PUBLIC_SUPABASE_URL = undefined
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = undefined
+
+describe('API Client', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -137,7 +151,7 @@ describe.skip('API Client', () => {
   })
 })
 
-describe.skip('API Integration (Mock)', () => {
+describe('API Integration (Mock)', () => {
   beforeEach(() => {
     // Mock successful fetch responses
     ;(global.fetch as jest.Mock).mockResolvedValue({
