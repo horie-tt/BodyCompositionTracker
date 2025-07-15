@@ -149,7 +149,7 @@ jobs:
       run: npx tsc --noEmit
     
     - name: Check for unused exports
-      run: npx ts-unused-exports tsconfig.json
+      run: npx ts-unused-exports tsconfig.json --ignoreFiles='*.test.ts,*.test.tsx,jest.setup.ts'
       continue-on-error: true
 
   build-and-deploy:
