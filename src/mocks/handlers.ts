@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { BodyData } from '@/types'
+import { getCurrentTimestampInTimezone } from '@/lib/timezone'
 
 // Mock data that matches the current GAS app structure
 const mockBodyData: BodyData[] = [
@@ -53,7 +54,7 @@ export const handlers = [
     
     const bodyData = {
       id: mockBodyData.length + 1,
-      created_at: new Date().toISOString(),
+      created_at: getCurrentTimestampInTimezone(),
       ...newData
     }
     
@@ -72,7 +73,7 @@ export const handlers = [
       data: {
         version: '2.0.0',
         buildNumber: '42',
-        lastUpdated: new Date().toISOString()
+        lastUpdated: getCurrentTimestampInTimezone()
       }
     })
   }),
@@ -81,7 +82,7 @@ export const handlers = [
   http.get('/api/health', () => {
     return HttpResponse.json({
       status: 'ok',
-      timestamp: new Date().toISOString()
+      timestamp: getCurrentTimestampInTimezone()
     })
   })
 ]
