@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import BodyDataForm from '../BodyDataForm'
 import { BodyData } from '@/types'
-import { getCurrentDateInTimezone } from '@/lib/timezone'
 
 // Mock the API validation function
 jest.mock('@/lib/api', () => ({
@@ -13,6 +12,14 @@ jest.mock('@/lib/api', () => ({
     if (!data.weight || data.weight <= 0) errors.push('体重は必須で、0より大きい値である必要があります')
     return errors
   })
+}))
+
+// Mock timezone function for consistent testing
+jest.mock('@/lib/timezone', () => ({
+  getCurrentDateInTimezone: jest.fn(() => '2024-01-15'), // Fixed date for testing
+  getUserTimezone: jest.fn(() => 'Asia/Tokyo'),
+  getCurrentTimestampInTimezone: jest.fn(() => '2024-01-15T10:00:00+09:00'),
+  isValidTimezone: jest.fn(() => true)
 }))
 
 describe('BodyDataForm', () => {
@@ -49,11 +56,10 @@ describe('BodyDataForm', () => {
     const dateInput = screen.getByTestId('date-input') as HTMLInputElement
     
     // In test environment (jsdom/browser), useEffect runs immediately
-    // so date should be set to current date in some timezone (format: YYYY-MM-DD)
+    // so date should be set to mocked current date
     await waitFor(() => {
-      expect(dateInput.value).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-      expect(dateInput.value).toBeTruthy()
-    })
+      expect(dateInput.value).toBe('2024-01-15')
+    }, { timeout: 5000 })
   })
 
   it('should handle timezone gracefully', () => {
