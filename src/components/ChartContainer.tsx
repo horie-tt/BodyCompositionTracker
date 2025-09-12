@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useCallback, useMemo } from 'react'
 import { Chart, ChartConfiguration, registerables } from 'chart.js'
-import { ChartContainerProps, DateRange } from '@/types'
+import { ChartContainerProps, DateRange, PeriodChanges, PeriodChangeItem } from '@/types'
 
 Chart.register(...registerables)
 
@@ -161,12 +161,67 @@ export default function ChartContainer({ data, activeTab, onTabChange, dateRange
     }
   }, [filteredData, initCharts])
 
+  // Calculate period changes (latest vs oldest in filtered period)
+  const periodChanges = useMemo((): PeriodChanges => {
+    if (filteredData.length === 0) {
+      return {
+        weight: { current: null, previous: null, change: null, changePercent: null },
+        bmi: { current: null, previous: null, change: null, changePercent: null },
+        bodyFat: { current: null, previous: null, change: null, changePercent: null },
+        muscleMass: { current: null, previous: null, change: null, changePercent: null },
+        visceralFat: { current: null, previous: null, change: null, changePercent: null },
+        calories: { current: null, previous: null, change: null, changePercent: null },
+        currentDate: null,
+        previousDate: null,
+        period: dateRange
+      }
+    }
+
+    // Sort by date to get latest and oldest
+    const sortedData = [...filteredData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const oldest = sortedData[0] // Oldest date in period
+    const latest = sortedData[sortedData.length - 1] // Latest date in period
+
+    const calculatePeriodChange = (current: number | null, previous: number | null): PeriodChangeItem => {
+      if (current === null || current === undefined || previous === null || previous === undefined) {
+        return { current, previous, change: null, changePercent: null }
+      }
+
+      const change = current - previous
+      const changePercent = previous !== 0 ? (change / previous) * 100 : 0
+
+      return {
+        current,
+        previous,
+        change,
+        changePercent
+      }
+    }
+
+    return {
+      weight: calculatePeriodChange(latest.weight, oldest.weight),
+      bmi: calculatePeriodChange(latest.bmi || null, oldest.bmi || null),
+      bodyFat: calculatePeriodChange(latest.body_fat || null, oldest.body_fat || null),
+      muscleMass: calculatePeriodChange(latest.muscle_mass || null, oldest.muscle_mass || null),
+      visceralFat: calculatePeriodChange(latest.visceral_fat || null, oldest.visceral_fat || null),
+      calories: calculatePeriodChange(latest.calories || null, oldest.calories || null),
+      currentDate: latest.date,
+      previousDate: oldest.date,
+      period: dateRange
+    }
+  }, [filteredData, dateRange])
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString)
     return date.toLocaleDateString('ja-JP', {
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const formatFullDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ja-JP')
   }
 
   const getChartOptions = (unit: string) => ({
@@ -357,6 +412,60 @@ export default function ChartContainer({ data, activeTab, onTabChange, dateRange
           </>
         )}
       </div>
+
+      {/* Period Changes Display */}
+      {filteredData.length > 1 && (
+        <div className="mt-4 pt-4 border-t border-white/20">
+          <div className="text-sm text-white/80 font-medium mb-3 text-center">
+            📈 {getDateRangeLabel(dateRange)}の変動
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { key: 'weight', label: '体重', unit: 'kg', data: periodChanges.weight },
+              { key: 'bmi', label: 'BMI', unit: '', data: periodChanges.bmi },
+              { key: 'bodyFat', label: '体脂肪率', unit: '%', data: periodChanges.bodyFat },
+              { key: 'muscleMass', label: '筋肉量', unit: 'kg', data: periodChanges.muscleMass },
+              { key: 'visceralFat', label: '内臓脂肪', unit: '', data: periodChanges.visceralFat },
+              { key: 'calories', label: 'カロリー', unit: 'kcal', data: periodChanges.calories }
+            ].map((item) => {
+              const hasChange = item.data.change !== null && item.data.change !== undefined
+              const isPositiveChange = hasChange && item.data.change! > 0
+              const isNegativeChange = hasChange && item.data.change! < 0
+              
+              return (
+                <div 
+                  key={item.key}
+                  className="bg-white/5 rounded-lg p-3 text-center"
+                  data-testid={`period-change-${item.key}`}
+                >
+                  <div className="text-xs text-white/60 mb-1">{item.label}</div>
+                  {hasChange ? (
+                    <div className={`text-sm font-medium flex items-center justify-center gap-1 ${
+                      isPositiveChange ? 'text-red-300' : isNegativeChange ? 'text-green-300' : 'text-white/80'
+                    }`}>
+                      <span>
+                        {isPositiveChange ? '↗' : isNegativeChange ? '↙' : '→'}
+                      </span>
+                      <span data-testid={`period-change-${item.key}-value`}>
+                        {isPositiveChange ? '+' : ''}{item.data.change!.toFixed(1)}{item.unit}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-white/40">
+                      データなし
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {periodChanges.currentDate && periodChanges.previousDate && (
+            <div className="text-xs text-white/50 text-center mt-3">
+              {formatFullDate(periodChanges.previousDate)} → {formatFullDate(periodChanges.currentDate)}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

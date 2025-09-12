@@ -92,6 +92,25 @@ export interface StatsDisplayProps {
 
 export type DateRange = '1week' | '1month' | '3months' | 'all'
 
+export interface PeriodChangeItem {
+  current: number | null
+  previous: number | null
+  change: number | null
+  changePercent: number | null
+}
+
+export interface PeriodChanges {
+  weight: PeriodChangeItem
+  bmi: PeriodChangeItem
+  bodyFat: PeriodChangeItem
+  muscleMass: PeriodChangeItem
+  visceralFat: PeriodChangeItem
+  calories: PeriodChangeItem
+  currentDate: string | null
+  previousDate: string | null
+  period: DateRange
+}
+
 export interface ChartContainerProps {
   data: BodyData[]
   activeTab: 'weight' | 'bodyFat' | 'muscle'

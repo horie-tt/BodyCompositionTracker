@@ -128,9 +128,9 @@ describe('ChartContainer', () => {
       />
     )
 
-    expect(screen.getByText('体重')).toBeInTheDocument()
-    expect(screen.getByText('体脂肪率')).toBeInTheDocument()
-    expect(screen.getByText('筋肉量')).toBeInTheDocument()
+    expect(screen.getByTestId('weight-tab')).toHaveTextContent('体重')
+    expect(screen.getByTestId('body-fat-tab')).toHaveTextContent('体脂肪率')
+    expect(screen.getByTestId('muscle-tab')).toHaveTextContent('筋肉量')
   })
 
   it('highlights active tab correctly', () => {
@@ -373,5 +373,82 @@ describe('ChartContainer', () => {
 
     expect(weekButton).toHaveClass('text-white/60')
     expect(monthButton).toHaveClass('bg-white/20', 'text-white')
+  })
+
+  it('displays period changes when data has multiple entries', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+      />
+    )
+
+    // Should show period changes section
+    expect(screen.getByText('📈 1週間の変動')).toBeInTheDocument()
+    
+    // Should show all 6 metrics
+    expect(screen.getByTestId('period-change-weight')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-bmi')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-bodyFat')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-muscleMass')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-visceralFat')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-calories')).toBeInTheDocument()
+  })
+
+  it('does not display period changes with single entry', () => {
+    const singleEntry = [mockData[0]]
+    
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={singleEntry}
+      />
+    )
+
+    // Should not show period changes section
+    expect(screen.queryByText('📈 1週間の変動')).not.toBeInTheDocument()
+  })
+
+  it('shows correct period change values', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+      />
+    )
+
+    // Weight change: 69.8 - 70.5 = -0.7 (negative, should be green with down arrow)
+    const weightChange = screen.getByTestId('period-change-weight-value')
+    expect(weightChange.textContent).toMatch(/-0\.7kg/)
+    
+    // Body fat change: 14.8 - 15.2 = -0.4 (negative, should be green with down arrow) 
+    const bodyFatChange = screen.getByTestId('period-change-bodyFat-value')
+    expect(bodyFatChange.textContent).toMatch(/-0\.4%/)
+    
+    // Muscle mass change: 55.7 - 55.3 = +0.4 (positive, should be red with up arrow)
+    const muscleChange = screen.getByTestId('period-change-muscleMass-value')
+    expect(muscleChange.textContent).toMatch(/\+0\.4kg/)
+  })
+
+  it('updates period changes when date range changes', () => {
+    const { rerender } = render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+        dateRange="1week"
+      />
+    )
+
+    expect(screen.getByText('📈 1週間の変動')).toBeInTheDocument()
+
+    rerender(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+        dateRange="1month"
+      />
+    )
+
+    expect(screen.getByText('📈 1ヶ月の変動')).toBeInTheDocument()
   })
 })
