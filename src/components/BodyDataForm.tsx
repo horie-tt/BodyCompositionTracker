@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BodyData, BodyDataFormProps } from '@/types'
 import { validateBodyData } from '@/lib/api'
+import { getCurrentDateInTimezone } from '@/lib/timezone'
 
 export default function BodyDataForm({ onSubmit, isLoading = false }: BodyDataFormProps) {
   const [formData, setFormData] = useState<Partial<BodyData>>({
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: '', // Will be set by useEffect to avoid SSR mismatch
     weight: undefined,
     bmi: undefined,
     body_fat: undefined,
@@ -17,6 +18,18 @@ export default function BodyDataForm({ onSubmit, isLoading = false }: BodyDataFo
 
   const [errors, setErrors] = useState<string[]>([])
   const [status, setStatus] = useState<string>('データを入力して記録しましょう')
+
+  // Set current date in user's timezone on client side only
+  useEffect(() => {
+    if (typeof window !== 'undefined' && formData.date === '') {
+      const currentDate = getCurrentDateInTimezone();
+      setFormData(prev => ({
+        ...prev,
+        date: currentDate
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - run only once on mount
 
   const handleInputChange = (field: keyof BodyData, value: string) => {
     const numericValue = value === '' ? undefined : Number(value)
