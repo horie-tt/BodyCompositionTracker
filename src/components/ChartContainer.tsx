@@ -1,16 +1,40 @@
 'use client'
 
-import React, { useEffect, useRef, useCallback } from 'react'
+import React, { useEffect, useRef, useCallback, useMemo } from 'react'
 import { Chart, ChartConfiguration, registerables } from 'chart.js'
-import { ChartContainerProps } from '@/types'
+import { ChartContainerProps, DateRange } from '@/types'
 
 Chart.register(...registerables)
 
-export default function ChartContainer({ data, activeTab, onTabChange }: ChartContainerProps) {
+export default function ChartContainer({ data, activeTab, onTabChange, dateRange, onDateRangeChange }: ChartContainerProps) {
   const weightChartRef = useRef<HTMLCanvasElement>(null)
-  const compositionChartRef = useRef<HTMLCanvasElement>(null)
-  const caloriesChartRef = useRef<HTMLCanvasElement>(null)
+  const bodyFatChartRef = useRef<HTMLCanvasElement>(null)
+  const muscleChartRef = useRef<HTMLCanvasElement>(null)
   const chartsRef = useRef<{ [key: string]: Chart | null }>({})
+
+  // Filter data based on selected date range
+  const filteredData = useMemo(() => {
+    if (dateRange === 'all') return data
+    
+    const now = new Date()
+    const cutoffDate = new Date()
+    
+    switch (dateRange) {
+      case '1week':
+        cutoffDate.setDate(now.getDate() - 7)
+        break
+      case '1month':
+        cutoffDate.setMonth(now.getMonth() - 1)
+        break
+      case '3months':
+        cutoffDate.setMonth(now.getMonth() - 3)
+        break
+      default:
+        return data
+    }
+    
+    return data.filter(item => new Date(item.date) >= cutoffDate)
+  }, [data, dateRange])
 
   const initWeightChart = useCallback(() => {
     if (!weightChartRef.current) return
@@ -25,10 +49,10 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
     const config: ChartConfiguration = {
       type: 'line',
       data: {
-        labels: data.map(d => formatDate(d.date)),
+        labels: filteredData.map(d => formatDate(d.date)),
         datasets: [{
           label: '体重 (kg)',
-          data: data.map(d => d.weight),
+          data: filteredData.map(d => d.weight),
           borderColor: 'rgba(255, 255, 255, 0.8)',
           backgroundColor: 'rgba(255, 255, 255, 0.1)',
           pointBackgroundColor: 'white',
@@ -44,93 +68,84 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
     }
 
     chartsRef.current.weight = new Chart(ctx, config)
-  }, [data])
+  }, [filteredData])
 
-  const initCompositionChart = useCallback(() => {
-    if (!compositionChartRef.current) return
+  const initBodyFatChart = useCallback(() => {
+    if (!bodyFatChartRef.current) return
 
-    const ctx = compositionChartRef.current.getContext('2d')
+    const ctx = bodyFatChartRef.current.getContext('2d')
     if (!ctx) return
 
-    if (chartsRef.current.composition) {
-      chartsRef.current.composition.destroy()
+    if (chartsRef.current.bodyFat) {
+      chartsRef.current.bodyFat.destroy()
     }
 
     const config: ChartConfiguration = {
       type: 'line',
       data: {
-        labels: data.map(d => formatDate(d.date)),
-        datasets: [
-          {
-            label: '体脂肪率 (%)',
-            data: data.map(d => d.body_fat || 0),
-            borderColor: '#ff6b9d',
-            backgroundColor: 'rgba(255, 107, 157, 0.1)',
-            pointBackgroundColor: '#ff6b9d',
-            pointBorderColor: '#ff6b9d',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            tension: 0.4,
-            fill: false
-          },
-          {
-            label: '筋肉量 (kg)',
-            data: data.map(d => d.muscle_mass || 0),
-            borderColor: '#6bcf7f',
-            backgroundColor: 'rgba(107, 207, 127, 0.1)',
-            pointBackgroundColor: '#6bcf7f',
-            pointBorderColor: '#6bcf7f',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            tension: 0.4,
-            fill: false
-          }
-        ]
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      options: getChartOptions('') as any
-    }
-
-    chartsRef.current.composition = new Chart(ctx, config)
-  }, [data])
-
-  const initCaloriesChart = useCallback(() => {
-    if (!caloriesChartRef.current) return
-
-    const ctx = caloriesChartRef.current.getContext('2d')
-    if (!ctx) return
-
-    if (chartsRef.current.calories) {
-      chartsRef.current.calories.destroy()
-    }
-
-    const config: ChartConfiguration = {
-      type: 'bar',
-      data: {
-        labels: data.map(d => formatDate(d.date)),
+        labels: filteredData.map(d => formatDate(d.date)),
         datasets: [{
-          label: '消費カロリー (kcal)',
-          data: data.map(d => d.calories || 0),
-          backgroundColor: 'rgba(255, 211, 61, 0.6)',
-          borderColor: '#ffd93d',
-          borderWidth: 1
+          label: '体脂肪率 (%)',
+          data: filteredData.map(d => d.body_fat || 0),
+          borderColor: 'rgba(255, 107, 157, 0.8)',
+          backgroundColor: 'rgba(255, 107, 157, 0.1)',
+          pointBackgroundColor: '#ff6b9d',
+          pointBorderColor: 'rgba(255, 107, 157, 0.8)',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          tension: 0.4,
+          fill: true
         }]
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      options: getChartOptions('kcal') as any
+      options: getChartOptions('%') as any
     }
 
-    chartsRef.current.calories = new Chart(ctx, config)
-  }, [data])
+    chartsRef.current.bodyFat = new Chart(ctx, config)
+  }, [filteredData])
+
+  const initMuscleChart = useCallback(() => {
+    if (!muscleChartRef.current) return
+
+    const ctx = muscleChartRef.current.getContext('2d')
+    if (!ctx) return
+
+    if (chartsRef.current.muscle) {
+      chartsRef.current.muscle.destroy()
+    }
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: {
+        labels: filteredData.map(d => formatDate(d.date)),
+        datasets: [{
+          label: '筋肉量 (kg)',
+          data: filteredData.map(d => d.muscle_mass || 0),
+          borderColor: 'rgba(107, 207, 127, 0.8)',
+          backgroundColor: 'rgba(107, 207, 127, 0.1)',
+          pointBackgroundColor: '#6bcf7f',
+          pointBorderColor: 'rgba(107, 207, 127, 0.8)',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      options: getChartOptions('kg') as any
+    }
+
+    chartsRef.current.muscle = new Chart(ctx, config)
+  }, [filteredData])
 
   const initCharts = useCallback(() => {
     initWeightChart()
-    initCompositionChart()
-    initCaloriesChart()
-  }, [initWeightChart, initCompositionChart, initCaloriesChart])
+    initBodyFatChart()
+    initMuscleChart()
+  }, [initWeightChart, initBodyFatChart, initMuscleChart])
 
   useEffect(() => {
-    if (data.length > 0) {
+    if (filteredData.length > 0) {
       initCharts()
     }
     
@@ -144,7 +159,7 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
         }
       })
     }
-  }, [data, initCharts])
+  }, [filteredData, initCharts])
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString)
@@ -219,12 +234,46 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
 
 
 
-  const handleTabClick = (tab: 'weight' | 'composition' | 'calories') => {
+  const handleTabClick = (tab: 'weight' | 'bodyFat' | 'muscle') => {
     onTabChange(tab)
+  }
+
+  const handleDateRangeChange = (range: DateRange) => {
+    onDateRangeChange(range)
+  }
+
+  const getDateRangeLabel = (range: DateRange): string => {
+    switch (range) {
+      case '1week': return '1週間'
+      case '1month': return '1ヶ月'
+      case '3months': return '3ヶ月'
+      case 'all': return '全期間'
+      default: return '1週間'
+    }
   }
 
   return (
     <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
+      {/* Date Range Selector */}
+      <div className="flex justify-end mb-4">
+        <div className="bg-white/5 rounded-lg p-1 flex gap-1">
+          {(['1week', '1month', '3months', 'all'] as DateRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => handleDateRangeChange(range)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                dateRange === range
+                  ? 'bg-white/20 text-white shadow-sm'
+                  : 'text-white/60 hover:text-white/80 hover:bg-white/10'
+              }`}
+              data-testid={`date-range-${range}`}
+            >
+              {getDateRangeLabel(range)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Chart Tabs */}
       <div className="flex mb-5 bg-white/10 rounded-xl p-1">
         <button
@@ -239,32 +288,32 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
           体重
         </button>
         <button
-          onClick={() => handleTabClick('composition')}
+          onClick={() => handleTabClick('bodyFat')}
           className={`flex-1 py-3 px-2 text-center rounded-lg text-xs font-medium cursor-pointer transition-all duration-300 ${
-            activeTab === 'composition'
+            activeTab === 'bodyFat'
               ? 'bg-white/20 text-white shadow-sm'
               : 'text-white/70 hover:text-white/90'
           }`}
-          data-testid="composition-tab"
+          data-testid="body-fat-tab"
         >
-          体組成
+          体脂肪率
         </button>
         <button
-          onClick={() => handleTabClick('calories')}
+          onClick={() => handleTabClick('muscle')}
           className={`flex-1 py-3 px-2 text-center rounded-lg text-xs font-medium cursor-pointer transition-all duration-300 ${
-            activeTab === 'calories'
+            activeTab === 'muscle'
               ? 'bg-white/20 text-white shadow-sm'
               : 'text-white/70 hover:text-white/90'
           }`}
-          data-testid="calories-tab"
+          data-testid="muscle-tab"
         >
-          カロリー
+          筋肉量
         </button>
       </div>
 
       {/* Chart Containers */}
       <div className="relative h-80">
-        {data.length === 0 ? (
+        {filteredData.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-white/60">
               <div className="text-2xl mb-2">📊</div>
@@ -285,23 +334,23 @@ export default function ChartContainer({ data, activeTab, onTabChange }: ChartCo
             </div>
             
             <div
-              className={`absolute inset-0 ${activeTab === 'composition' ? 'block' : 'hidden'}`}
-              data-testid="composition-chart-container"
+              className={`absolute inset-0 ${activeTab === 'bodyFat' ? 'block' : 'hidden'}`}
+              data-testid="body-fat-chart-container"
             >
               <canvas
-                ref={compositionChartRef}
-                data-testid="composition-chart"
+                ref={bodyFatChartRef}
+                data-testid="body-fat-chart"
                 className="w-full h-full"
               />
             </div>
             
             <div
-              className={`absolute inset-0 ${activeTab === 'calories' ? 'block' : 'hidden'}`}
-              data-testid="calories-chart-container"
+              className={`absolute inset-0 ${activeTab === 'muscle' ? 'block' : 'hidden'}`}
+              data-testid="muscle-chart-container"
             >
               <canvas
-                ref={caloriesChartRef}
-                data-testid="calories-chart"
+                ref={muscleChartRef}
+                data-testid="muscle-chart"
                 className="w-full h-full"
               />
             </div>
