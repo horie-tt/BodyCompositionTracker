@@ -196,8 +196,17 @@ export class SupabaseApiClient {
       success: true,
       data: {
         version: '2.0.0',
-        buildNumber: '1',
-        lastUpdated: new Date().toLocaleDateString('ja-JP'),
+        buildNumber: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 8) || '1',
+        lastUpdated: process.env.VERCEL_GIT_COMMIT_DATE 
+          ? new Date(process.env.VERCEL_GIT_COMMIT_DATE).toLocaleDateString('ja-JP', {
+              timeZone: 'Asia/Tokyo',
+              year: 'numeric',
+              month: '2-digit', 
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : new Date().toLocaleDateString('ja-JP'),
       },
     };
   }
