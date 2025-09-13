@@ -19,11 +19,33 @@ export interface SaveResponse {
   error?: string
 }
 
+export interface LatestDataItem {
+  current: number | null
+  previous: number | null
+  change: number | null
+  changePercent: number | null
+}
+
+export interface LatestData {
+  weight: LatestDataItem
+  bmi: LatestDataItem
+  bodyFat: LatestDataItem
+  muscleMass: LatestDataItem
+  visceralFat: LatestDataItem
+  calories: LatestDataItem
+  measurementDate: string | null
+  previousDate: string | null
+}
+
 export interface StatsData {
   avgWeight: number
   avgBMI: number
   totalRecords: number
   latestRecord?: BodyData
+}
+
+export interface LatestStatsData {
+  latestData: LatestData
 }
 
 export interface AppInfo {
@@ -64,14 +86,37 @@ export interface BodyDataFormProps {
 }
 
 export interface StatsDisplayProps {
-  data: StatsData
+  data: LatestStatsData
   isLoading?: boolean
+}
+
+export type DateRange = '1week' | '1month' | '3months' | 'all'
+
+export interface PeriodChangeItem {
+  current: number | null
+  previous: number | null
+  change: number | null
+  changePercent: number | null
+}
+
+export interface PeriodChanges {
+  weight: PeriodChangeItem
+  bmi: PeriodChangeItem
+  bodyFat: PeriodChangeItem
+  muscleMass: PeriodChangeItem
+  visceralFat: PeriodChangeItem
+  calories: PeriodChangeItem
+  currentDate: string | null
+  previousDate: string | null
+  period: DateRange
 }
 
 export interface ChartContainerProps {
   data: BodyData[]
-  activeTab: 'weight' | 'composition' | 'calories'
-  onTabChange: (tab: 'weight' | 'composition' | 'calories') => void
+  activeTab: 'weight' | 'bodyFat' | 'muscle'
+  onTabChange: (tab: 'weight' | 'bodyFat' | 'muscle') => void
+  dateRange: DateRange
+  onDateRangeChange: (range: DateRange) => void
 }
 
 export interface FooterProps {

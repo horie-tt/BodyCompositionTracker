@@ -1,7 +1,7 @@
 // API client for Body Composition Tracker
 // Replaces google.script.run calls with REST API calls
 
-import { BodyData, SaveResponse, StatsData, AppInfo, ApiResponse } from '@/types'
+import { BodyData, SaveResponse, StatsData, AppInfo, ApiResponse, LatestStatsData, LatestDataItem } from '@/types'
 import { supabaseApiClient } from './supabase-api'
 
 // Check if we should use Supabase instead of MSW
@@ -192,4 +192,60 @@ export const getAppInfo = async (): Promise<AppInfo> => {
     throw new Error(response.error || 'Failed to get app info')
   }
   return response.data || { version: '--', buildNumber: '--', lastUpdated: '--' }
+}
+
+// Calculate latest data with changes from previous measurement
+export const calculateLatestData = (data: BodyData[]): LatestStatsData => {
+  if (data.length === 0) {
+    return {
+      latestData: {
+        weight: { current: null, previous: null, change: null, changePercent: null },
+        bmi: { current: null, previous: null, change: null, changePercent: null },
+        bodyFat: { current: null, previous: null, change: null, changePercent: null },
+        muscleMass: { current: null, previous: null, change: null, changePercent: null },
+        visceralFat: { current: null, previous: null, change: null, changePercent: null },
+        calories: { current: null, previous: null, change: null, changePercent: null },
+        measurementDate: null,
+        previousDate: null,
+      }
+    }
+  }
+
+  // Sort data by date descending to get latest first
+  const sortedData = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const latest = sortedData[0]
+  const previous = sortedData.length > 1 ? sortedData[1] : null
+
+  const calculateChange = (current: number | null, prev: number | null): LatestDataItem => {
+    if (current === null || current === undefined) {
+      return { current: null, previous: prev, change: null, changePercent: null }
+    }
+    
+    if (prev === null || prev === undefined) {
+      return { current, previous: null, change: null, changePercent: null }
+    }
+
+    const change = current - prev
+    const changePercent = prev !== 0 ? (change / prev) * 100 : 0
+
+    return {
+      current,
+      previous: prev,
+      change,
+      changePercent
+    }
+  }
+
+  return {
+    latestData: {
+      weight: calculateChange(latest.weight, previous?.weight || null),
+      bmi: calculateChange(latest.bmi || null, previous?.bmi || null),
+      bodyFat: calculateChange(latest.body_fat || null, previous?.body_fat || null),
+      muscleMass: calculateChange(latest.muscle_mass || null, previous?.muscle_mass || null),
+      visceralFat: calculateChange(latest.visceral_fat || null, previous?.visceral_fat || null),
+      calories: calculateChange(latest.calories || null, previous?.calories || null),
+      measurementDate: latest.date,
+      previousDate: previous?.date || null,
+    }
+  }
 }
