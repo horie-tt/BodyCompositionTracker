@@ -233,15 +233,8 @@ jobs:
 
   notify-status:
     runs-on: ubuntu-latest
-    needs:
-      [
-        test,
-        e2e-test,
-        security-scan,
-        type-check,
-        build-and-deploy,
-        lighthouse-audit,
-      ]
+    # needs: [test,e2e-test,security-scan,type-check,build-and-deploy,lighthouse-audit]
+    needs: [test, security-scan, type-check, build-and-deploy, lighthouse-audit]
     if: always()
 
     steps:
