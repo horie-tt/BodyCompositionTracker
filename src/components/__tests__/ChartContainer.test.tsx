@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import ChartContainer from '../ChartContainer'
-import { BodyData } from '@/types'
+import { BodyData, DateRange } from '@/types'
 
 // Mock Chart.js to avoid canvas rendering issues in tests
 jest.mock('chart.js', () => {
@@ -56,11 +56,19 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 
 describe('ChartContainer', () => {
   const mockOnTabChange = jest.fn()
+  const mockOnDateRangeChange = jest.fn()
   
+  // Use recent dates to ensure data appears in date range filters
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  const dayBefore = new Date(today)
+  dayBefore.setDate(today.getDate() - 2)
+
   const mockData: BodyData[] = [
     {
       id: 1,
-      date: '2024-01-01',
+      date: dayBefore.toISOString().split('T')[0],
       weight: 70.5,
       bmi: 22.1,
       body_fat: 15.2,
@@ -69,7 +77,7 @@ describe('ChartContainer', () => {
     },
     {
       id: 2,
-      date: '2024-01-02',
+      date: yesterday.toISOString().split('T')[0],
       weight: 70.0,
       bmi: 21.9,
       body_fat: 15.0,
@@ -78,7 +86,7 @@ describe('ChartContainer', () => {
     },
     {
       id: 3,
-      date: '2024-01-03',
+      date: today.toISOString().split('T')[0],
       weight: 69.8,
       bmi: 21.8,
       body_fat: 14.8,
@@ -91,114 +99,116 @@ describe('ChartContainer', () => {
     jest.clearAllMocks()
   })
 
+  const defaultProps = {
+    data: [],
+    activeTab: 'weight' as const,
+    onTabChange: mockOnTabChange,
+    dateRange: '1week' as DateRange,
+    onDateRangeChange: mockOnDateRangeChange,
+  }
+
   it('renders chart tabs correctly', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
     expect(screen.getByTestId('weight-tab')).toBeInTheDocument()
-    expect(screen.getByTestId('composition-tab')).toBeInTheDocument()
-    expect(screen.getByTestId('calories-tab')).toBeInTheDocument()
+    expect(screen.getByTestId('body-fat-tab')).toBeInTheDocument()
+    expect(screen.getByTestId('muscle-tab')).toBeInTheDocument()
   })
 
   it('displays correct tab labels', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
-    expect(screen.getByText('体重')).toBeInTheDocument()
-    expect(screen.getByText('体組成')).toBeInTheDocument()
-    expect(screen.getByText('カロリー')).toBeInTheDocument()
+    expect(screen.getByTestId('weight-tab')).toHaveTextContent('体重')
+    expect(screen.getByTestId('body-fat-tab')).toHaveTextContent('体脂肪率')
+    expect(screen.getByTestId('muscle-tab')).toHaveTextContent('筋肉量')
   })
 
   it('highlights active tab correctly', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
     const weightTab = screen.getByTestId('weight-tab')
-    const compositionTab = screen.getByTestId('composition-tab')
-    const caloriesTab = screen.getByTestId('calories-tab')
+    const bodyFatTab = screen.getByTestId('body-fat-tab')
+    const muscleTab = screen.getByTestId('muscle-tab')
 
     expect(weightTab).toHaveClass('bg-white/20', 'text-white')
-    expect(compositionTab).toHaveClass('text-white/70')
-    expect(caloriesTab).toHaveClass('text-white/70')
+    expect(bodyFatTab).toHaveClass('text-white/70')
+    expect(muscleTab).toHaveClass('text-white/70')
   })
 
   it('calls onTabChange when tab is clicked', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
-    fireEvent.click(screen.getByTestId('composition-tab'))
-    expect(mockOnTabChange).toHaveBeenCalledWith('composition')
+    fireEvent.click(screen.getByTestId('body-fat-tab'))
+    expect(mockOnTabChange).toHaveBeenCalledWith('bodyFat')
 
-    fireEvent.click(screen.getByTestId('calories-tab'))
-    expect(mockOnTabChange).toHaveBeenCalledWith('calories')
+    fireEvent.click(screen.getByTestId('muscle-tab'))
+    expect(mockOnTabChange).toHaveBeenCalledWith('muscle')
   })
 
   it('shows correct chart container based on active tab', () => {
     const { rerender } = render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
         activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
     expect(screen.getByTestId('weight-chart-container')).toHaveClass('block')
-    expect(screen.getByTestId('composition-chart-container')).toHaveClass('hidden')
-    expect(screen.getByTestId('calories-chart-container')).toHaveClass('hidden')
+    expect(screen.getByTestId('body-fat-chart-container')).toHaveClass('hidden')
+    expect(screen.getByTestId('muscle-chart-container')).toHaveClass('hidden')
 
     rerender(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="composition"
-        onTabChange={mockOnTabChange}
+        activeTab="bodyFat"
       />
     )
 
     expect(screen.getByTestId('weight-chart-container')).toHaveClass('hidden')
-    expect(screen.getByTestId('composition-chart-container')).toHaveClass('block')
-    expect(screen.getByTestId('calories-chart-container')).toHaveClass('hidden')
+    expect(screen.getByTestId('body-fat-chart-container')).toHaveClass('block')
+    expect(screen.getByTestId('muscle-chart-container')).toHaveClass('hidden')
   })
 
   it('renders canvas elements for each chart', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
     expect(screen.getByTestId('weight-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('composition-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('calories-chart')).toBeInTheDocument()
+    expect(screen.getByTestId('body-fat-chart')).toBeInTheDocument()
+    expect(screen.getByTestId('muscle-chart')).toBeInTheDocument()
   })
 
   it('displays empty state when no data is provided', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={[]}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
@@ -209,9 +219,8 @@ describe('ChartContainer', () => {
   it('applies correct styling to chart container', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
@@ -222,9 +231,8 @@ describe('ChartContainer', () => {
   it('handles tab change for all three tabs', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
@@ -232,78 +240,76 @@ describe('ChartContainer', () => {
     fireEvent.click(screen.getByTestId('weight-tab'))
     expect(mockOnTabChange).toHaveBeenCalledWith('weight')
 
-    // Test composition tab
-    fireEvent.click(screen.getByTestId('composition-tab'))
-    expect(mockOnTabChange).toHaveBeenCalledWith('composition')
+    // Test body fat tab
+    fireEvent.click(screen.getByTestId('body-fat-tab'))
+    expect(mockOnTabChange).toHaveBeenCalledWith('bodyFat')
 
-    // Test calories tab
-    fireEvent.click(screen.getByTestId('calories-tab'))
-    expect(mockOnTabChange).toHaveBeenCalledWith('calories')
+    // Test muscle tab
+    fireEvent.click(screen.getByTestId('muscle-tab'))
+    expect(mockOnTabChange).toHaveBeenCalledWith('muscle')
 
     expect(mockOnTabChange).toHaveBeenCalledTimes(3)
   })
 
   it('renders with different active tabs correctly', () => {
-    // Test composition tab active
+    // Test body fat tab active
     const { rerender } = render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="composition"
-        onTabChange={mockOnTabChange}
+        activeTab="bodyFat"
       />
     )
 
-    expect(screen.getByTestId('composition-tab')).toHaveClass('bg-white/20', 'text-white')
+    expect(screen.getByTestId('body-fat-tab')).toHaveClass('bg-white/20', 'text-white')
     expect(screen.getByTestId('weight-tab')).toHaveClass('text-white/70')
-    expect(screen.getByTestId('calories-tab')).toHaveClass('text-white/70')
+    expect(screen.getByTestId('muscle-tab')).toHaveClass('text-white/70')
 
-    // Test calories tab active
+    // Test muscle tab active
     rerender(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="calories"
-        onTabChange={mockOnTabChange}
+        activeTab="muscle"
       />
     )
 
-    expect(screen.getByTestId('calories-tab')).toHaveClass('bg-white/20', 'text-white')
+    expect(screen.getByTestId('muscle-tab')).toHaveClass('bg-white/20', 'text-white')
     expect(screen.getByTestId('weight-tab')).toHaveClass('text-white/70')
-    expect(screen.getByTestId('composition-tab')).toHaveClass('text-white/70')
+    expect(screen.getByTestId('body-fat-tab')).toHaveClass('text-white/70')
   })
 
   it('maintains chart container structure with data', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
     // Check that chart containers exist
     expect(screen.getByTestId('weight-chart-container')).toBeInTheDocument()
-    expect(screen.getByTestId('composition-chart-container')).toBeInTheDocument()
-    expect(screen.getByTestId('calories-chart-container')).toBeInTheDocument()
+    expect(screen.getByTestId('body-fat-chart-container')).toBeInTheDocument()
+    expect(screen.getByTestId('muscle-chart-container')).toBeInTheDocument()
 
     // Check that canvas elements exist
     expect(screen.getByTestId('weight-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('composition-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('calories-chart')).toBeInTheDocument()
+    expect(screen.getByTestId('body-fat-chart')).toBeInTheDocument()
+    expect(screen.getByTestId('muscle-chart')).toBeInTheDocument()
   })
 
   it('handles empty data gracefully', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={[]}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
     // Should still render tabs
     expect(screen.getByTestId('weight-tab')).toBeInTheDocument()
-    expect(screen.getByTestId('composition-tab')).toBeInTheDocument()
-    expect(screen.getByTestId('calories-tab')).toBeInTheDocument()
+    expect(screen.getByTestId('body-fat-tab')).toBeInTheDocument()
+    expect(screen.getByTestId('muscle-tab')).toBeInTheDocument()
 
     // Should show empty state
     expect(screen.getByText('データがありません')).toBeInTheDocument()
@@ -312,16 +318,137 @@ describe('ChartContainer', () => {
   it('applies correct hover styles to inactive tabs', () => {
     render(
       <ChartContainer
+        {...defaultProps}
         data={mockData}
-        activeTab="weight"
-        onTabChange={mockOnTabChange}
       />
     )
 
-    const compositionTab = screen.getByTestId('composition-tab')
-    const caloriesTab = screen.getByTestId('calories-tab')
+    const bodyFatTab = screen.getByTestId('body-fat-tab')
+    const muscleTab = screen.getByTestId('muscle-tab')
 
-    expect(compositionTab).toHaveClass('hover:text-white/90')
-    expect(caloriesTab).toHaveClass('hover:text-white/90')
+    expect(bodyFatTab).toHaveClass('hover:text-white/90')
+    expect(muscleTab).toHaveClass('hover:text-white/90')
+  })
+
+  it('renders date range selector correctly', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+      />
+    )
+
+    expect(screen.getByTestId('date-range-1week')).toBeInTheDocument()
+    expect(screen.getByTestId('date-range-1month')).toBeInTheDocument()
+    expect(screen.getByTestId('date-range-3months')).toBeInTheDocument()
+    expect(screen.getByTestId('date-range-all')).toBeInTheDocument()
+  })
+
+  it('calls onDateRangeChange when date range is clicked', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+      />
+    )
+
+    fireEvent.click(screen.getByTestId('date-range-1month'))
+    expect(mockOnDateRangeChange).toHaveBeenCalledWith('1month')
+
+    fireEvent.click(screen.getByTestId('date-range-3months'))
+    expect(mockOnDateRangeChange).toHaveBeenCalledWith('3months')
+  })
+
+  it('highlights active date range correctly', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+        dateRange="1month"
+      />
+    )
+
+    const weekButton = screen.getByTestId('date-range-1week')
+    const monthButton = screen.getByTestId('date-range-1month')
+
+    expect(weekButton).toHaveClass('text-white/60')
+    expect(monthButton).toHaveClass('bg-white/20', 'text-white')
+  })
+
+  it('displays period changes when data has multiple entries', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+      />
+    )
+
+    // Should show period changes section
+    expect(screen.getByText('📈 1週間の変動')).toBeInTheDocument()
+    
+    // Should show all 6 metrics
+    expect(screen.getByTestId('period-change-weight')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-bmi')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-bodyFat')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-muscleMass')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-visceralFat')).toBeInTheDocument()
+    expect(screen.getByTestId('period-change-calories')).toBeInTheDocument()
+  })
+
+  it('does not display period changes with single entry', () => {
+    const singleEntry = [mockData[0]]
+    
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={singleEntry}
+      />
+    )
+
+    // Should not show period changes section
+    expect(screen.queryByText('📈 1週間の変動')).not.toBeInTheDocument()
+  })
+
+  it('shows correct period change values', () => {
+    render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+      />
+    )
+
+    // Weight change: 69.8 - 70.5 = -0.7 (negative, should be green with down arrow)
+    const weightChange = screen.getByTestId('period-change-weight-value')
+    expect(weightChange.textContent).toMatch(/-0\.7kg/)
+    
+    // Body fat change: 14.8 - 15.2 = -0.4 (negative, should be green with down arrow) 
+    const bodyFatChange = screen.getByTestId('period-change-bodyFat-value')
+    expect(bodyFatChange.textContent).toMatch(/-0\.4%/)
+    
+    // Muscle mass change: 55.7 - 55.3 = +0.4 (positive, should be red with up arrow)
+    const muscleChange = screen.getByTestId('period-change-muscleMass-value')
+    expect(muscleChange.textContent).toMatch(/\+0\.4kg/)
+  })
+
+  it('updates period changes when date range changes', () => {
+    const { rerender } = render(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+        dateRange="1week"
+      />
+    )
+
+    expect(screen.getByText('📈 1週間の変動')).toBeInTheDocument()
+
+    rerender(
+      <ChartContainer
+        {...defaultProps}
+        data={mockData}
+        dateRange="1month"
+      />
+    )
+
+    expect(screen.getByText('📈 1ヶ月の変動')).toBeInTheDocument()
   })
 })

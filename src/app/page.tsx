@@ -4,22 +4,30 @@ import React, { useState, useEffect } from 'react'
 import BodyDataForm from '@/components/BodyDataForm'
 import StatsDisplay from '@/components/StatsDisplay'
 import ChartContainer from '@/components/ChartContainer'
-import { BodyData, StatsData, AppInfo } from '@/types'
-import { saveBodyData, getBodyData, calculateStats, getAppInfo } from '@/lib/api'
+import { BodyData, LatestStatsData, AppInfo, DateRange } from '@/types'
+import { saveBodyData, getBodyData, calculateLatestData, getAppInfo } from '@/lib/api'
 
 export default function Home() {
   const [bodyData, setBodyData] = useState<BodyData[]>([])
-  const [statsData, setStatsData] = useState<StatsData>({
-    avgWeight: 0,
-    avgBMI: 0,
-    totalRecords: 0,
+  const [latestStatsData, setLatestStatsData] = useState<LatestStatsData>({
+    latestData: {
+      weight: { current: null, previous: null, change: null, changePercent: null },
+      bmi: { current: null, previous: null, change: null, changePercent: null },
+      bodyFat: { current: null, previous: null, change: null, changePercent: null },
+      muscleMass: { current: null, previous: null, change: null, changePercent: null },
+      visceralFat: { current: null, previous: null, change: null, changePercent: null },
+      calories: { current: null, previous: null, change: null, changePercent: null },
+      measurementDate: null,
+      previousDate: null,
+    }
   })
   const [appInfo, setAppInfo] = useState<AppInfo>({
     version: '--',
     buildNumber: '--',
     lastUpdated: '--',
   })
-  const [activeTab, setActiveTab] = useState<'weight' | 'composition' | 'calories'>('weight')
+  const [activeTab, setActiveTab] = useState<'weight' | 'bodyFat' | 'muscle'>('weight')
+  const [dateRange, setDateRange] = useState<DateRange>('1week')
   const [isLoading, setIsLoading] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
 
@@ -34,8 +42,8 @@ export default function Home() {
       const data = await getBodyData()
       setBodyData(data)
       
-      const stats = await calculateStats(data)
-      setStatsData(stats)
+      const latestStats = calculateLatestData(data)
+      setLatestStatsData(latestStats)
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -65,8 +73,12 @@ export default function Home() {
     }
   }
 
-  const handleTabChange = (tab: 'weight' | 'composition' | 'calories') => {
+  const handleTabChange = (tab: 'weight' | 'bodyFat' | 'muscle') => {
     setActiveTab(tab)
+  }
+
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range)
   }
 
   return (
@@ -89,7 +101,7 @@ export default function Home() {
 
         {/* Stats Display */}
         <div className="mb-8">
-          <StatsDisplay data={statsData} isLoading={isDataLoading} />
+          <StatsDisplay data={latestStatsData} isLoading={isDataLoading} />
         </div>
 
         {/* Chart Container */}
@@ -98,6 +110,8 @@ export default function Home() {
             data={bodyData}
             activeTab={activeTab}
             onTabChange={handleTabChange}
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
           />
         </div>
 
